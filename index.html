@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMDB Explorer - El Último Baile</title>
+    <link rel="stylesheet" href="style_pagina.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <div class="logo">EL ULTIMO BAILE ⛹️‍♀️</div>
+                <div class="subtitle">Explorando "El Último Baile" </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Menú de Navegación -->
+        <nav>
+            <button class="nav-button active" onclick="setView('search')"> Buscar Serie</button>
+            <button class="nav-button" onclick="setView('trending')"> Series Trending</button>
+            <button class="nav-button" onclick="setView('genres')"> Géneros</button>
+            <button class="nav-button" onclick="setView('people')"> Actores</button>
+            <button class="nav-button" onclick="setView('discover')"> Descubrir</button>
+            <button class="nav-button" onclick="setView('el-ultimo-baile')"> El Último Baile</button>
+        </nav>
+
+        <!-- Sección de Búsqueda -->
+        <div id="search-view" class="input-section">
+            <h2> Buscar Serie por Nombre</h2>
+            <div class="form-group">
+                <label for="series-name">Nombre de la Serie:</label>
+                <input type="text" id="series-name" placeholder="Ej: Breaking Bad, The Crown, El Último Baile...">
+            </div>
+            <div class="button-group">
+                <button onclick="searchSeries()">Buscar</button>
+                <button class="btn-secondary" onclick="clearResults()">Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Sección de Tendencias -->
+        <div id="trending-view" class="input-section" style="display: none;">
+            <h2> Series en Tendencia</h2>
+            <p style="color: var(--text); margin-bottom: 1rem;">Consulta las series más populares en este momento</p>
+            <div class="button-group">
+                <button onclick="getTrendingSeries()">Cargar Tendencias</button>
+            </div>
+        </div>
+
+        <!-- Sección de Géneros -->
+        <div id="genres-view" class="input-section" style="display: none;">
+            <h2> Explorar por Género</h2>
+            <div class="form-group">
+                <label for="genre-select">Selecciona un Género:</label>
+                <select id="genre-select">
+                    <option value="">-- Cargando géneros --</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="getSeriesByGenre()">Buscar por Género</button>
+            </div>
+        </div>
+
+        <!-- Sección de Actores -->
+        <div id="people-view" class="input-section" style="display: none;">
+            <h2> Buscar Actores</h2>
+            <div class="form-group">
+                <label for="actor-name">Nombre del Actor/Actriz:</label>
+                <input type="text" id="actor-name" placeholder="Ej: David Benioff, Morgan Freeman...">
+            </div>
+            <div class="button-group">
+                <button onclick="searchPeople()">Buscar Actor</button>
+            </div>
+        </div>
+
+        <!-- Sección de Descubrimiento -->
+        <div id="discover-view" class="input-section" style="display: none;">
+            <h2> Descubrir Series</h2>
+            <div class="form-group">
+                <label for="discover-sort">Ordenar por:</label>
+                <select id="discover-sort">
+                    <option value="popularity.desc">Más Popular</option>
+                    <option value="vote_average.desc">Mejor Calificado</option>
+                    <option value="first_air_date.desc">Más Reciente</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="discoverSeries()">Descubrir</button>
+            </div>
+        </div>
+
+        <!-- Sección de El Último Baile -->
+        <div id="el-ultimo-baile-view" class="input-section" style="display: none;">
+            <h2> El Último Baile</h2>
+            <p style="color: var(--text); margin-bottom: 1rem;">Información completa sobre la serie "El Último Baile"</p>
+            <div class="button-group">
+                <button onclick="getSeriesDetails('el-ultimo-baile')">Cargar Detalles</button>
+                <button class="btn-secondary" onclick="getSeriesSeasons('el-ultimo-baile')">Ver Temporadas</button>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div id="results-area"></div>
+    </div>
+
+    <footer>
+        <div class="footer-text"> TMDB Explorer - Powered by The Movie Database</div>
+        <div class="footer-text">© 2024 - Ejercicio de API REST</div>
+    </footer>
+
+    <script>
+        const API_KEY = '2dab6da841ca7abbd5ab6db496e1088a';
+        const API_BASE = 'https://api.themoviedb.org/3';
+        const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+        let currentView = 'search';
+
+        // Función para cambiar de vista
+        function setView(view) {
+            currentView = view;
+            
+            // Actualizar botones
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Ocultar/mostrar secciones
+            document.querySelectorAll('[id$="-view"]').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(view + '-view').style.display = 'block';
+
+            // Limpiar resultados
+            clearResults();
+
+            // Cargar géneros si es necesario
+            if (view === 'genres') {
+                loadGenres();
+            }
+        }
+
+        // Función para limpiar resultados
+        function clearResults() {
+            document.getElementById('results-area').innerHTML = '';
+        }
+
+        // Mostrar mensaje de carga
+        function showLoading() {
+            document.getElementById('results-area').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Cargando datos de TMDB...
+                </div>
+            `;
+        }
+
+        // Mostrar mensaje de error
+        function showError(message) {
+            document.getElementById('results-area').innerHTML = `
+                <div class="error-message">
+                     Error: ${message}
+                </div>
+            `;
+        }
+
+        // 1. BUSCAR SERIES POR NOMBRE
+        async function searchSeries() {
+            const seriesName = document.getElementById('series-name').value.trim();
+            
+            if (!seriesName) {
+                showError('Por favor ingresa el nombre de una serie');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(seriesName)}&language=es-ES`
+                );
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    showError(`No se encontraron series con el nombre "${seriesName}"`);
+                    return;
+                }
+
+                displaySeriesGrid(data.results);
+            } catch (error) {
+                showError(`Error en la conexión: ${error.message}`);
+            }
+        }
+
+        // 2. OBTENER SERIES EN TENDENCIA
+        async function getTrendingSeries() {
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/trending/tv/week?api_key=${API_KEY}&language=es-ES`
+                );
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    showError('No se pudieron cargar las series en tendencia');
+                    return;
+                }
+
+                displaySeriesGrid(data.results, 'Series en Tendencia');
+            } catch (error) {
+                showError(`Error en la conexión: ${error.message}`);
+            }
+        }
+
+        // 3. CARGAR GÉNEROS
+        async function loadGenres() {
+            try {
+                const response = await fetch(
+                    `${API_BASE}/genre/tv/list?api_key=${API_KEY}&language=es-ES`
+                );
+                const data = await response.json();
+
+                const selectGenre = document.getElementById('genre-select');
+                selectGenre.innerHTML = '<option value="">-- Selecciona un género --</option>';
+
+                data.genres.forEach(genre => {
+                    const option = document.createElement('option');
+                    option.value = genre.id;
+                    option.textContent = genre.name;
+                    selectGenre.appendChild(option);
+                });
+            } catch (error) {
+                showError(`Error al cargar géneros: ${error.message}`);
+            }
+        }
+
+        // 4. OBTENER SERIES POR GÉNERO
+        async function getSeriesByGenre() {
+            const genreId = document.getElementById('genre-select').value;
+
+            if (!genreId) {
+                showError('Por favor selecciona un género');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/discover/tv?api_key=${API_KEY}&with_genres=${genreId}&language=es-ES&sort_by=popularity.desc`
+                );
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    showError('No se encontraron series en este género');
+                    return;
+                }
+
+                displaySeriesGrid(data.results, `Series del Género Seleccionado`);
+            } catch (error) {
+                showError(`Error en la conexión: ${error.message}`);
+            }
+        }
+
+        // 5. BUSCAR ACTORES/PERSONAS
+        async function searchPeople() {
+            const actorName = document.getElementById('actor-name').value.trim();
+
+            if (!actorName) {
+                showError('Por favor ingresa el nombre de un actor');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(actorName)}&language=es-ES`
+                );
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    showError(`No se encontraron actores con el nombre "${actorName}"`);
+                    return;
+                }
+
+                displayPeopleResults(data.results);
+            } catch (error) {
+                showError(`Error en la conexión: ${error.message}`);
+            }
+        }
+
+        // 6. DESCUBRIR SERIES
+        async function discoverSeries() {
+            const sortBy = document.getElementById('discover-sort').value;
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/discover/tv?api_key=${API_KEY}&language=es-ES&sort_by=${sortBy}`
+                );
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    showError('No se pudieron cargar series');
+                    return;
+                }
+
+                displaySeriesGrid(data.results, 'Series Descubiertas');
+            } catch (error) {
+                showError(`Error en la conexión: ${error.message}`);
+            }
+        }
+
+        // FUNCIONES ESPECIALES PARA "EL ÚLTIMO BAILE"
+
+        async function getSeriesDetails(seriesIdentifier) {
+            showLoading();
+
+            try {
+                let seriesId;
+
+                // Buscar El Último Baile si es necesario
+                if (seriesIdentifier === 'el-ultimo-baile') {
+                    const searchResponse = await fetch(
+                        `${API_BASE}/search/tv?api_key=${API_KEY}&query=El%20Último%20Baile&language=es-ES`
+                    );
+                    const searchData = await searchResponse.json();
+
+                    if (!searchData.results || searchData.results.length === 0) {
+                        showError('No se encontró "El Último Baile"');
+                        return;
+                    }
+                    seriesId = searchData.results[0].id;
+                } else {
+                    seriesId = seriesIdentifier;
+                }
+
+                // Obtener detalles completos
+                const response = await fetch(
+                    `${API_BASE}/tv/${seriesId}?api_key=${API_KEY}&language=es-ES`
+                );
+                const data = await response.json();
+
+                displaySeriesDetails(data);
+            } catch (error) {
+                showError(`Error al obtener detalles: ${error.message}`);
+            }
+        }
+
+        async function getSeriesSeasons(seriesIdentifier) {
+            showLoading();
+
+            try {
+                let seriesId;
+
+                if (seriesIdentifier === 'el-ultimo-baile') {
+                    const searchResponse = await fetch(
+                        `${API_BASE}/search/tv?api_key=${API_KEY}&query=El%20Último%20Baile&language=es-ES`
+                    );
+                    const searchData = await searchResponse.json();
+
+                    if (!searchData.results || searchData.results.length === 0) {
+                        showError('No se encontró "El Último Baile"');
+                        return;
+                    }
+                    seriesId = searchData.results[0].id;
+                } else {
+                    seriesId = seriesIdentifier;
+                }
+
+                const response = await fetch(
+                    `${API_BASE}/tv/${seriesId}?api_key=${API_KEY}&language=es-ES`
+                );
+                const data = await response.json();
+
+                displaySeasons(data);
+            } catch (error) {
+                showError(`Error al obtener temporadas: ${error.message}`);
+            }
+        }
+
+        // FUNCIONES DE VISUALIZACIÓN
+
+        function displaySeriesGrid(series, title = 'Resultados de Búsqueda') {
+            let html = `<div class="results-section"><h2>${title}</h2><div class="grid">`;
+
+            series.forEach((s, index) => {
+                const posterPath = s.poster_path 
+                    ? `${IMAGE_BASE}${s.poster_path}` 
+                    : null;
+                const rating = s.vote_average ? (s.vote_average / 2).toFixed(1) : 'N/A';
+                const year = s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A';
+
+                html += `
+                    <div class="card" style="animation-delay: ${index * 0.05}s;">
+                        <div class="card-image ${posterPath ? '' : 'no-image'}">
+                            ${posterPath ? `<img src="${posterPath}" alt="${s.name}">` : '🎬'}
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">${s.name}</div>
+                            <div class="card-info"> ${year}</div>
+                            <div class="card-rating"> ${rating}/5</div>
+                            <div class="card-info">${s.overview ? s.overview.substring(0, 80) + '...' : 'Sin descripción'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div></div>';
+            document.getElementById('results-area').innerHTML = html;
+        }
+
+        function displaySeriesDetails(series) {
+            const posterPath = series.poster_path ? `${IMAGE_BASE}${series.poster_path}` : null;
+            const rating = series.vote_average ? (series.vote_average / 2).toFixed(1) : 'N/A';
+            const genresList = series.genres.map(g => g.name).join(', ') || 'No especificado';
+            const networks = series.networks.map(n => n.name).join(', ') || 'No especificado';
+            const status = series.status || 'No especificado';
+            const episodes = series.number_of_episodes || 'N/A';
+            const seasons = series.number_of_seasons || 'N/A';
+
+            let html = `
+                <div class="details-container">
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: start;">
+                        ${posterPath ? `<img src="${posterPath}" alt="${series.name}" style="width: 200px; border-radius: 10px; border: 2px solid var(--primary);">` : ''}
+                        <div>
+                            <h2 style="font-size: 2rem; color: var(--accent); margin-bottom: 1rem;">${series.name}</h2>
+                            <p style="color: var(--text); line-height: 1.6; margin-bottom: 1.5rem;">${series.overview || 'Sin descripción'}</p>
+                            
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label"> Calificación</div>
+                                    <div class="detail-value">${rating}/5 (${series.vote_count} votos)</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Géneros</div>
+                                    <div class="detail-value">${genresList}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Redes</div>
+                                    <div class="detail-value">${networks}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Estado</div>
+                                    <div class="detail-value">${status}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Temporadas</div>
+                                    <div class="detail-value">${seasons}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Episodios</div>
+                                    <div class="detail-value">${episodes}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> Primera emisión</div>
+                                    <div class="detail-value">${series.first_air_date || 'N/A'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label"> País</div>
+                                    <div class="detail-value">${(series.origin_country || []).join(', ') || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('results-area').innerHTML = html;
+        }
+
+        function displaySeasons(series) {
+            let html = `
+                <div class="results-section">
+                    <h2>${series.name} - Temporadas</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Temporada</th>
+                                    <th>Episodios</th>
+                                    <th>Fecha de Aire</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            series.seasons.forEach(season => {
+                if (season.season_number >= 0) {
+                    const airDate = season.air_date || 'N/A';
+                    const episodeCount = season.episode_count || 0;
+
+                    html += `
+                        <tr>
+                            <td><strong>Temporada ${season.season_number}</strong></td>
+                            <td>${episodeCount} episodios</td>
+                            <td>${airDate}</td>
+                            <td>${season.episode_count > 0 ? ' Disponible' : ' No disponible'}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('results-area').innerHTML = html;
+        }
+
+        function displayPeopleResults(people) {
+            let html = `<div class="results-section"><h2>Resultados de Actores</h2><div class="grid">`;
+
+            people.forEach((person, index) => {
+                const profilePath = person.profile_path 
+                    ? `${IMAGE_BASE}${person.profile_path}` 
+                    : null;
+                const popularity = person.popularity ? person.popularity.toFixed(1) : 'N/A';
+                const role = person.known_for_department || 'Artista';
+
+                html += `
+                    <div class="card" style="animation-delay: ${index * 0.05}s;">
+                        <div class="card-image ${profilePath ? '' : 'no-image'}">
+                            ${profilePath ? `<img src="${profilePath}" alt="${person.name}">` : '👤'}
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">${person.name}</div>
+                            <div class="card-info">🎭 ${role}</div>
+                            <div class="card-rating">📊 Popularidad: ${popularity}</div>
+                            ${person.known_for ? `<div class="card-info">Conocido por: ${person.known_for.map(k => k.title || k.name).join(', ')}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div></div>';
+            document.getElementById('results-area').innerHTML = html;
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('load', () => {
+            console.log(' Aplicación TMDB Explorer cargada correctamente');
+            console.log(' Usando API Key: ' + API_KEY.substring(0, 5) + '...');
+        });
+    </script>
+</body>
+</html>
