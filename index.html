@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TMDB Explorer - El Último Baile</title>
-    <link rel="stylesheet" href="style_pagina.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
@@ -19,75 +19,31 @@
     <div class="container">
         <!-- Menú de Navegación -->
         <nav>
-            <button class="nav-button active" onclick="setView('search')"> Buscar Serie</button>
-            <button class="nav-button" onclick="setView('trending')"> Series Trending</button>
-            <button class="nav-button" onclick="setView('genres')"> Géneros</button>
-            <button class="nav-button" onclick="setView('people')"> Actores</button>
-            <button class="nav-button" onclick="setView('discover')"> Descubrir</button>
-            <button class="nav-button" onclick="setView('el-ultimo-baile')"> El Último Baile</button>
+            <button class="nav-button" onclick="setView('seasons')">🎬Temporadas</button>  <!-- CAMBIO AQUÍ -->
+            <button class="nav-button" onclick="setView('people')">👥Actores El Último Baile</button>
+            <button class="nav-button" onclick="setView('el-ultimo-baile')">⛹️‍♂️El Último Baile</button>
         </nav>
 
-        <!-- Sección de Búsqueda -->
-        <div id="search-view" class="input-section">
-            <h2> Buscar Serie por Nombre</h2>
-            <div class="form-group">
-                <label for="series-name">Nombre de la Serie:</label>
-                <input type="text" id="series-name" placeholder="Ej: Breaking Bad, The Crown, El Último Baile...">
-            </div>
+ <!-- Sección de Temporadas - Solo El Último Baile -->
+        <div id="seasons-view" class="input-section" style="display: none;">
+            <h2>Episodios de "El Último Baile"</h2>
+            <p style="color: var(--text); margin-bottom: 1.5rem;">
+                Docuserie de Michael Jordan y los Chicago Bulls 1997-98 (10 episodios)
+            </p>
             <div class="button-group">
-                <button onclick="searchSeries()">Buscar</button>
+                <button onclick="loadLastDanceEpisodes()">Ver los 10 Episodios con Fotos</button>
                 <button class="btn-secondary" onclick="clearResults()">Limpiar</button>
             </div>
         </div>
-
-        <!-- Sección de Tendencias -->
-        <div id="trending-view" class="input-section" style="display: none;">
-            <h2> Series en Tendencia</h2>
-            <p style="color: var(--text); margin-bottom: 1rem;">Consulta las series más populares en este momento</p>
-            <div class="button-group">
-                <button onclick="getTrendingSeries()">Cargar Tendencias</button>
-            </div>
-        </div>
-
-        <!-- Sección de Géneros -->
-        <div id="genres-view" class="input-section" style="display: none;">
-            <h2> Explorar por Género</h2>
-            <div class="form-group">
-                <label for="genre-select">Selecciona un Género:</label>
-                <select id="genre-select">
-                    <option value="">-- Cargando géneros --</option>
-                </select>
-            </div>
-            <div class="button-group">
-                <button onclick="getSeriesByGenre()">Buscar por Género</button>
-            </div>
-        </div>
-
-        <!-- Sección de Actores -->
+        <!-- Sección de Actores - Solo El Último Baile -->
         <div id="people-view" class="input-section" style="display: none;">
-            <h2> Buscar Actores</h2>
-            <div class="form-group">
-                <label for="actor-name">Nombre del Actor/Actriz:</label>
-                <input type="text" id="actor-name" placeholder="Ej: David Benioff, Morgan Freeman...">
-            </div>
+            <h2>Principales Entrevistados en "El Último Baile"</h2>
+            <p style="color: var(--text); margin-bottom: 1.5rem;">
+                Las voces clave de la docuserie sobre Michael Jordan y los Chicago Bulls 1997-98
+            </p>
             <div class="button-group">
-                <button onclick="searchPeople()">Buscar Actor</button>
-            </div>
-        </div>
-
-        <!-- Sección de Descubrimiento -->
-        <div id="discover-view" class="input-section" style="display: none;">
-            <h2> Descubrir Series</h2>
-            <div class="form-group">
-                <label for="discover-sort">Ordenar por:</label>
-                <select id="discover-sort">
-                    <option value="popularity.desc">Más Popular</option>
-                    <option value="vote_average.desc">Mejor Calificado</option>
-                    <option value="first_air_date.desc">Más Reciente</option>
-                </select>
-            </div>
-            <div class="button-group">
-                <button onclick="discoverSeries()">Descubrir</button>
+                <button onclick="loadLastDanceCast()">Cargar Actores / Entrevistados</button>
+                <button class="btn-secondary" onclick="clearResults()">Limpiar</button>
             </div>
         </div>
 
@@ -97,7 +53,6 @@
             <p style="color: var(--text); margin-bottom: 1rem;">Información completa sobre la serie "El Último Baile"</p>
             <div class="button-group">
                 <button onclick="getSeriesDetails('el-ultimo-baile')">Cargar Detalles</button>
-                <button class="btn-secondary" onclick="getSeriesSeasons('el-ultimo-baile')">Ver Temporadas</button>
             </div>
         </div>
 
@@ -164,156 +119,159 @@
                 </div>
             `;
         }
+// ID fijo de "El Último Baile" en TMDB
+const LAST_DANCE_ID = 79525;
 
-        // 1. BUSCAR SERIES POR NOMBRE
-        async function searchSeries() {
-            const seriesName = document.getElementById('series-name').value.trim();
-            
-            if (!seriesName) {
-                showError('Por favor ingresa el nombre de una serie');
-                return;
-            }
+// Función para cargar y mostrar los 10 episodios con imágenes
+async function loadLastDanceEpisodes() {
+    showLoading();
 
-            showLoading();
+    try {
+        // Obtenemos la temporada 1 (la única real)
+        const url = `${API_BASE}/tv/${LAST_DANCE_ID}/season/1?api_key=${API_KEY}&language=es-ES`;
+        const response = await fetch(url);
 
-            try {
-                const response = await fetch(
-                    `${API_BASE}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(seriesName)}&language=es-ES`
-                );
-                const data = await response.json();
-
-                if (!data.results || data.results.length === 0) {
-                    showError(`No se encontraron series con el nombre "${seriesName}"`);
-                    return;
-                }
-
-                displaySeriesGrid(data.results);
-            } catch (error) {
-                showError(`Error en la conexión: ${error.message}`);
-            }
+        if (!response.ok) {
+            throw new Error(`Error al cargar episodios: ${response.status} - ${response.statusText}`);
         }
 
-        // 2. OBTENER SERIES EN TENDENCIA
-        async function getTrendingSeries() {
-            showLoading();
+        const seasonData = await response.json();
 
-            try {
-                const response = await fetch(
-                    `${API_BASE}/trending/tv/week?api_key=${API_KEY}&language=es-ES`
-                );
-                const data = await response.json();
-
-                if (!data.results || data.results.length === 0) {
-                    showError('No se pudieron cargar las series en tendencia');
-                    return;
-                }
-
-                displaySeriesGrid(data.results, 'Series en Tendencia');
-            } catch (error) {
-                showError(`Error en la conexión: ${error.message}`);
-            }
+        if (!seasonData.episodes || seasonData.episodes.length === 0) {
+            showError('No se encontraron episodios en la temporada 1');
+            return;
         }
 
-        // 3. CARGAR GÉNEROS
-        async function loadGenres() {
-            try {
-                const response = await fetch(
-                    `${API_BASE}/genre/tv/list?api_key=${API_KEY}&language=es-ES`
-                );
-                const data = await response.json();
+        displayEpisodesList(seasonData.episodes);
 
-                const selectGenre = document.getElementById('genre-select');
-                selectGenre.innerHTML = '<option value="">-- Selecciona un género --</option>';
+    } catch (error) {
+        console.error('Error completo:', error);
+        showError(`Problema al cargar: ${error.message}. Revisa la consola (F12) o tu API key.`);
+    }
+}
 
-                data.genres.forEach(genre => {
-                    const option = document.createElement('option');
-                    option.value = genre.id;
-                    option.textContent = genre.name;
-                    selectGenre.appendChild(option);
-                });
-            } catch (error) {
-                showError(`Error al cargar géneros: ${error.message}`);
-            }
+// Mostrar lista de episodios con foto (still) si existe
+function displayEpisodesList(episodes) {
+    let html = `
+        <div class="results-section">
+            <h2>Episodios - El Último Baile (Temporada 1)</h2>
+            <p style="color: #aaa; margin-bottom: 1.5rem;">10 episodios • Estreno: 19 de abril de 2020</p>
+            <div class="episode-grid">
+    `;
+
+    episodes.forEach((ep, index) => {
+        const stillPath = ep.still_path 
+            ? `${IMAGE_BASE}${ep.still_path}` 
+            : 'https://via.placeholder.com/500x280?text=Sin+Imagen';  // placeholder si no hay foto
+
+        const airDate = ep.air_date 
+            ? new Date(ep.air_date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) 
+            : 'Sin fecha';
+
+        const runtime = ep.runtime ? `${ep.runtime} min` : '—';
+
+        html += `
+            <div class="episode-card" style="animation-delay: ${index * 0.08}s;">
+                <div class="episode-image">
+                    <img src="${stillPath}" alt="Episodio ${ep.episode_number} - ${ep.name}" 
+                         onerror="this.src='https://via.placeholder.com/500x280?text=Sin+Imagen';">
+                </div>
+                <div class="episode-content">
+                    <h3>E${ep.episode_number.toString().padStart(2, '0')} - ${ep.name || 'Sin título'}</h3>
+                    <div class="episode-meta">
+                        ${airDate} • ${runtime}
+                    </div>
+                    <p class="episode-overview">
+                        ${ep.overview ? ep.overview.substring(0, 180) + (ep.overview.length > 180 ? '...' : '') : 'Sin descripción disponible en español.'}
+                    </p>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
+            <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
+                Datos de TMDB • Docuserie disponible en Netflix/ESPN
+            </p>
+        </div>
+    `;
+
+    document.getElementById('results-area').innerHTML = html;
+}
+
+// Cargar cast principal de El Último Baile
+async function loadLastDanceCast() {
+    showLoading();
+
+    try {
+        const url = `${API_BASE}/tv/${LAST_DANCE_ID}/credits?api_key=${API_KEY}&language=es-ES`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
 
-        // 4. OBTENER SERIES POR GÉNERO
-        async function getSeriesByGenre() {
-            const genreId = document.getElementById('genre-select').value;
+        const creditsData = await response.json();
 
-            if (!genreId) {
-                showError('Por favor selecciona un género');
-                return;
-            }
-
-            showLoading();
-
-            try {
-                const response = await fetch(
-                    `${API_BASE}/discover/tv?api_key=${API_KEY}&with_genres=${genreId}&language=es-ES&sort_by=popularity.desc`
-                );
-                const data = await response.json();
-
-                if (!data.results || data.results.length === 0) {
-                    showError('No se encontraron series en este género');
-                    return;
-                }
-
-                displaySeriesGrid(data.results, `Series del Género Seleccionado`);
-            } catch (error) {
-                showError(`Error en la conexión: ${error.message}`);
-            }
+        // TMDB devuelve "cast" para docuseries como "Self" roles
+        if (!creditsData.cast || creditsData.cast.length === 0) {
+            showError('No se encontró elenco en TMDB para esta serie');
+            return;
         }
 
-        // 5. BUSCAR ACTORES/PERSONAS
-        async function searchPeople() {
-            const actorName = document.getElementById('actor-name').value.trim();
+        // Tomamos solo los primeros 10 más relevantes (puedes ajustar)
+        const mainCast = creditsData.cast.slice(0, 10);
 
-            if (!actorName) {
-                showError('Por favor ingresa el nombre de un actor');
-                return;
-            }
+        displayLastDanceCast(mainCast);
 
-            showLoading();
+    } catch (error) {
+        console.error('Error al cargar cast:', error);
+        showError(`No se pudo cargar. Detalle: ${error.message} (revisa consola F12)`);
+    }
+}
 
-            try {
-                const response = await fetch(
-                    `${API_BASE}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(actorName)}&language=es-ES`
-                );
-                const data = await response.json();
+// Mostrar tarjetas de los principales
+function displayLastDanceCast(castList) {
+    let html = `
+        <div class="results-section">
+            <h2>Elenco Principal - "El Último Baile"</h2>
+            <p style="color: #aaa; margin-bottom: 1.5rem;">Personas clave que aparecen y son entrevistadas (datos de TMDB)</p>
+            <div class="grid">
+    `;
 
-                if (!data.results || data.results.length === 0) {
-                    showError(`No se encontraron actores con el nombre "${actorName}"`);
-                    return;
-                }
+    castList.forEach((person, index) => {
+        const profilePath = person.profile_path 
+            ? `${IMAGE_BASE}${person.profile_path}` 
+            : 'https://via.placeholder.com/300x450?text=Sin+Foto';
 
-                displayPeopleResults(data.results);
-            } catch (error) {
-                showError(`Error en la conexión: ${error.message}`);
-            }
-        }
+        const character = person.character || 'Self';  // En docuseries suele ser "Self - [rol]"
 
-        // 6. DESCUBRIR SERIES
-        async function discoverSeries() {
-            const sortBy = document.getElementById('discover-sort').value;
-            showLoading();
+        html += `
+            <div class="card" style="animation-delay: ${index * 0.05}s;">
+                <div class="card-image">
+                    <img src="${profilePath}" alt="${person.name}" 
+                         onerror="this.src='https://via.placeholder.com/300x450?text=Sin+Foto';">
+                </div>
+                <div class="card-content">
+                    <div class="card-title">${person.name}</div>
+                    <div class="card-info">${character}</div>
+                    <div class="card-rating">Popularidad: ${person.popularity ? person.popularity.toFixed(1) : 'N/A'}</div>
+                </div>
+            </div>
+        `;
+    });
 
-            try {
-                const response = await fetch(
-                    `${API_BASE}/discover/tv?api_key=${API_KEY}&language=es-ES&sort_by=${sortBy}`
-                );
-                const data = await response.json();
+    html += `
+            </div>
+            <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
+                Incluye a Michael Jordan, Scottie Pippen, Phil Jackson, Dennis Rodman, Steve Kerr y más
+            </p>
+        </div>
+    `;
 
-                if (!data.results || data.results.length === 0) {
-                    showError('No se pudieron cargar series');
-                    return;
-                }
-
-                displaySeriesGrid(data.results, 'Series Descubiertas');
-            } catch (error) {
-                showError(`Error en la conexión: ${error.message}`);
-            }
-        }
-
+    document.getElementById('results-area').innerHTML = html;
+}
         // FUNCIONES ESPECIALES PARA "EL ÚLTIMO BAILE"
 
         async function getSeriesDetails(seriesIdentifier) {
