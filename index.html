@@ -74,7 +74,12 @@
         <div class="footer-text">© 2024 - Ejercicio de API REST</div>
     </footer>
 
-    <script>
+    <!-- Polyfills para navegadores antiguos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+    <!-- Babel para soporte ES6 en tiempo real -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
         const API_KEY = '2dab6da841ca7abbd5ab6db496e1088a';
         const API_BASE = 'https://api.themoviedb.org/3';
         const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
