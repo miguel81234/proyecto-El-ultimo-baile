@@ -27,9 +27,9 @@
     <div class="container">
         <!-- Menú de Navegación -->
         <nav>
-            <button class="nav-button" onclick="setView('seasons')">🎬Temporadas</button> <!-- CAMBIO AQUÍ -->
-            <button class="nav-button" onclick="setView('people')">👥Actores El Último Baile</button>
-            <button class="nav-button" onclick="setView('el-ultimo-baile')">⛹️‍♂️El Último Baile</button>
+            <button class="nav-button" onclick="setView('seasons', this)">🎬Temporadas</button> <!-- CAMBIO AQUÍ -->
+            <button class="nav-button" onclick="setView('people', this)">👥Actores El Último Baile</button>
+            <button class="nav-button" onclick="setView('el-ultimo-baile', this)">⛹️‍♂️El Último Baile</button>
         </nav>
 
         <!-- Sección de Temporadas - Solo El Último Baile -->
@@ -87,19 +87,23 @@
         let currentView = 'search';
 
         // Función para cambiar de vista
-        function setView(view) {
+        function setView(view, element) {
             currentView = view;
 
             // Actualizar botones
-            document.querySelectorAll('.nav-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
+            var btns = document.querySelectorAll('.nav-button');
+            for(var i=0; i<btns.length; i++) {
+                btns[i].classList.remove('active');
+            }
+            if (element) {
+                element.classList.add('active');
+            }
 
             // Ocultar/mostrar secciones
-            document.querySelectorAll('[id$="-view"]').forEach(section => {
-                section.style.display = 'none';
-            });
+            var sections = document.querySelectorAll('[id$="-view"]');
+            for(var i=0; i<sections.length; i++) {
+                sections[i].style.display = 'none';
+            }
             document.getElementById(view + '-view').style.display = 'block';
 
             // Limpiar resultados
