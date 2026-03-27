@@ -77,6 +77,7 @@
     <!-- Polyfills para navegadores antiguos -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.11/runtime.min.js"></script>
     <!-- Babel para soporte ES6 en tiempo real -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script type="text/babel">
@@ -515,6 +516,13 @@
             html += '</div></div>';
             document.getElementById('results-area').innerHTML = html;
         }
+
+        // Exponer funciones globalmente para que HTML onclick pueda llamarlas post-Babel
+        window.setView = setView;
+        window.clearResults = clearResults;
+        window.loadLastDanceEpisodes = loadLastDanceEpisodes;
+        window.loadLastDanceCast = loadLastDanceCast;
+        window.getSeriesDetails = getSeriesDetails;
 
         // Inicializar al cargar la página
         window.addEventListener('load', () => {
