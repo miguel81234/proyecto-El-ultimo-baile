@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ultimo-baile-pwa-v1';
+const CACHE_NAME = 'ultimo-baile-pwa-v3';
 const ASSETS = [
     './',
     './index.html',
