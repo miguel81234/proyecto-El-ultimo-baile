@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TMDB Explorer - El Último Baile</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e50914">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body>
     <header>
@@ -506,6 +512,13 @@ function displayLastDanceCast(castList) {
         window.addEventListener('load', () => {
             console.log(' Aplicación TMDB Explorer cargada correctamente');
             console.log(' Usando API Key: ' + API_KEY.substring(0, 5) + '...');
+            
+            // Registrar PWA Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('ServiceWorker registrado:', reg.scope))
+                    .catch(err => console.error('Error al registrar ServiceWorker:', err));
+            }
         });
     </script>
 </body>
