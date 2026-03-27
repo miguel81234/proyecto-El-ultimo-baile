@@ -16,7 +16,7 @@ self.addEventListener('install', event => {
     );
 });
 
-// Activar y limpiar cachés antiguos
+// Activar y limpiar cachés antigu  os
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {

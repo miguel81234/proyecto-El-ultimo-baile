@@ -74,23 +74,18 @@
         <div class="footer-text">© 2024 - Ejercicio de API REST</div>
     </footer>
 
-    <!-- Polyfills para navegadores antiguos -->
+    <!-- Polyfill de Fetch y Promises para navegadores heredados -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.11/runtime.min.js"></script>
-    <!-- Babel para soporte ES6 en tiempo real -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="text/babel">
-        const API_KEY = '2dab6da841ca7abbd5ab6db496e1088a';
-        const API_BASE = 'https://api.themoviedb.org/3';
-        const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
-        let currentView = 'search';
+    
+    <script>
+        var API_KEY = '2dab6da841ca7abbd5ab6db496e1088a';
+        var API_BASE = 'https://api.themoviedb.org/3';
+        var IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+        var currentView = 'search';
 
-        // Función para cambiar de vista
         function setView(view, element) {
             currentView = view;
-
-            // Actualizar botones
             var btns = document.querySelectorAll('.nav-button');
             for(var i=0; i<btns.length; i++) {
                 btns[i].classList.remove('active');
@@ -98,446 +93,183 @@
             if (element) {
                 element.classList.add('active');
             }
-
-            // Ocultar/mostrar secciones
             var sections = document.querySelectorAll('[id$="-view"]');
-            for(var i=0; i<sections.length; i++) {
-                sections[i].style.display = 'none';
+            for(var j=0; j<sections.length; j++) {
+                sections[j].style.display = 'none';
             }
             document.getElementById(view + '-view').style.display = 'block';
-
-            // Limpiar resultados
             clearResults();
+        }
 
-            // Cargar géneros si es necesario
-            if (view === 'genres') {
-                loadGenres();
+        function clearResults() { document.getElementById('results-area').innerHTML = ''; }
+        function showLoading() { document.getElementById('results-area').innerHTML = '<div class="loading"><div class="spinner"></div>Cargando datos de TMDB...</div>'; }
+        function showError(message) { document.getElementById('results-area').innerHTML = '<div class="error-message">Error: ' + message + '</div>'; }
+
+        var LAST_DANCE_ID = 79525;
+
+        function checkResponse(response) {
+            if (!response.ok) {
+                throw new Error('Error HTTP: ' + response.status);
             }
+            return response.json();
         }
 
-        // Función para limpiar resultados
-        function clearResults() {
-            document.getElementById('results-area').innerHTML = '';
-        }
-
-        // Mostrar mensaje de carga
-        function showLoading() {
-            document.getElementById('results-area').innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    Cargando datos de TMDB...
-                </div>
-            `;
-        }
-
-        // Mostrar mensaje de error
-        function showError(message) {
-            document.getElementById('results-area').innerHTML = `
-                <div class="error-message">
-                     Error: ${message}
-                </div>
-            `;
-        }
-        // ID fijo de "El Último Baile" en TMDB
-        const LAST_DANCE_ID = 79525;
-
-        // Función para cargar y mostrar los 10 episodios con imágenes
-        async function loadLastDanceEpisodes() {
+        function loadLastDanceEpisodes() {
             showLoading();
-
-            try {
-                // Obtenemos la temporada 1 (la única real)
-                const url = `${API_BASE}/tv/${LAST_DANCE_ID}/season/1?api_key=${API_KEY}&language=es-ES`;
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Error al cargar episodios: ${response.status} - ${response.statusText}`);
-                }
-
-                const seasonData = await response.json();
-
-                if (!seasonData.episodes || seasonData.episodes.length === 0) {
-                    showError('No se encontraron episodios en la temporada 1');
-                    return;
-                }
-
-                displayEpisodesList(seasonData.episodes);
-
-            } catch (error) {
-                console.error('Error completo:', error);
-                showError(`Problema al cargar: ${error.message}. Revisa la consola (F12) o tu API key.`);
-            }
+            var url = API_BASE + '/tv/' + LAST_DANCE_ID + '/season/1?api_key=' + API_KEY + '&language=es-ES';
+            fetch(url)
+                .then(checkResponse)
+                .then(function(seasonData) {
+                    if (!seasonData.episodes || seasonData.episodes.length === 0) {
+                        showError('No se encontraron episodios en la temporada 1');
+                        return;
+                    }
+                    displayEpisodesList(seasonData.episodes);
+                })
+                .catch(function(error) {
+                    showError('Problema al cargar: ' + error.message);
+                });
         }
 
-        // Mostrar lista de episodios con foto (still) si existe
         function displayEpisodesList(episodes) {
-            let html = `
-        <div class="results-section">
-            <h2>Episodios - El Último Baile (Temporada 1)</h2>
-            <p style="color: #aaa; margin-bottom: 1.5rem;">10 episodios • Estreno: 19 de abril de 2020</p>
-            <div class="episode-grid">
-    `;
+            var html = '<div class="results-section">' +
+                '<h2>Episodios - El Último Baile (Temporada 1)</h2>' +
+                '<p style="color: #aaa; margin-bottom: 1.5rem;">10 episodios • Estreno: 19 de abril de 2020</p>' +
+                '<div class="episode-grid">';
 
-            episodes.forEach((ep, index) => {
-                const stillPath = ep.still_path
-                    ? `${IMAGE_BASE}${ep.still_path}`
-                    : 'https://via.placeholder.com/500x280?text=Sin+Imagen';  // placeholder si no hay foto
+            for (var i = 0; i < episodes.length; i++) {
+                var ep = episodes[i];
+                var stillPath = ep.still_path ? IMAGE_BASE + ep.still_path : 'https://via.placeholder.com/500x280?text=Sin+Imagen';
+                var airDate = ep.air_date ? new Date(ep.air_date).toLocaleDateString() : 'Sin fecha';
+                var runtime = ep.runtime ? ep.runtime + ' min' : '—';
+                var overview = ep.overview ? ep.overview.substring(0, 180) + (ep.overview.length > 180 ? '...' : '') : 'Sin descripción disponible en español.';
 
-                const airDate = ep.air_date
-                    ? new Date(ep.air_date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
-                    : 'Sin fecha';
-
-                const runtime = ep.runtime ? `${ep.runtime} min` : '—';
-
-                html += `
-            <div class="episode-card" style="animation-delay: ${index * 0.08}s;">
-                <div class="episode-image">
-                    <img src="${stillPath}" alt="Episodio ${ep.episode_number} - ${ep.name}" 
-                         onerror="this.src='https://via.placeholder.com/500x280?text=Sin+Imagen';">
-                </div>
-                <div class="episode-content">
-                    <h3>E${ep.episode_number.toString().padStart(2, '0')} - ${ep.name || 'Sin título'}</h3>
-                    <div class="episode-meta">
-                        ${airDate} • ${runtime}
-                    </div>
-                    <p class="episode-overview">
-                        ${ep.overview ? ep.overview.substring(0, 180) + (ep.overview.length > 180 ? '...' : '') : 'Sin descripción disponible en español.'}
-                    </p>
-                </div>
-            </div>
-        `;
-            });
-
-            html += `
-            </div>
-            <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
-                Datos de TMDB • Docuserie disponible en Netflix/ESPN
-            </p>
-        </div>
-    `;
-
-            document.getElementById('results-area').innerHTML = html;
-        }
-
-        // Cargar cast principal de El Último Baile
-        async function loadLastDanceCast() {
-            showLoading();
-
-            try {
-                const url = `${API_BASE}/tv/${LAST_DANCE_ID}/credits?api_key=${API_KEY}&language=es-ES`;
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                const creditsData = await response.json();
-
-                // TMDB devuelve "cast" para docuseries como "Self" roles
-                if (!creditsData.cast || creditsData.cast.length === 0) {
-                    showError('No se encontró elenco en TMDB para esta serie');
-                    return;
-                }
-
-                // Tomamos solo los primeros 10 más relevantes (puedes ajustar)
-                const mainCast = creditsData.cast.slice(0, 10);
-
-                displayLastDanceCast(mainCast);
-
-            } catch (error) {
-                console.error('Error al cargar cast:', error);
-                showError(`No se pudo cargar. Detalle: ${error.message} (revisa consola F12)`);
+                html += '<div class="episode-card" style="animation-delay: ' + (i * 0.08) + 's;">' +
+                    '<div class="episode-image">' +
+                        '<img src="' + stillPath + '" alt="Episodio ' + ep.episode_number + '" onerror="this.src=\'https://via.placeholder.com/500x280?text=Sin+Imagen\';">' +
+                    '</div>' +
+                    '<div class="episode-content">' +
+                        '<h3>E' + (ep.episode_number < 10 ? '0' + ep.episode_number : ep.episode_number) + ' - ' + (ep.name || 'Sin título') + '</h3>' +
+                        '<div class="episode-meta">' + airDate + ' • ' + runtime + '</div>' +
+                        '<p class="episode-overview">' + overview + '</p>' +
+                    '</div>' +
+                '</div>';
             }
-        }
-
-        // Mostrar tarjetas de los principales
-        function displayLastDanceCast(castList) {
-            let html = `
-        <div class="results-section">
-            <h2>Elenco Principal - "El Último Baile"</h2>
-            <p style="color: #aaa; margin-bottom: 1.5rem;">Personas clave que aparecen y son entrevistadas (datos de TMDB)</p>
-            <div class="grid">
-    `;
-
-            castList.forEach((person, index) => {
-                const profilePath = person.profile_path
-                    ? `${IMAGE_BASE}${person.profile_path}`
-                    : 'https://via.placeholder.com/300x450?text=Sin+Foto';
-
-                const character = person.character || 'Self';  // En docuseries suele ser "Self - [rol]"
-
-                html += `
-            <div class="card" style="animation-delay: ${index * 0.05}s;">
-                <div class="card-image">
-                    <img src="${profilePath}" alt="${person.name}" 
-                         onerror="this.src='https://via.placeholder.com/300x450?text=Sin+Foto';">
-                </div>
-                <div class="card-content">
-                    <div class="card-title">${person.name}</div>
-                    <div class="card-info">${character}</div>
-                    <div class="card-rating">Popularidad: ${person.popularity ? person.popularity.toFixed(1) : 'N/A'}</div>
-                </div>
-            </div>
-        `;
-            });
-
-            html += `
-            </div>
-            <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
-                Incluye a Michael Jordan, Scottie Pippen, Phil Jackson, Dennis Rodman, Steve Kerr y más
-            </p>
-        </div>
-    `;
-
-            document.getElementById('results-area').innerHTML = html;
-        }
-        // FUNCIONES ESPECIALES PARA "EL ÚLTIMO BAILE"
-
-        async function getSeriesDetails(seriesIdentifier) {
-            showLoading();
-
-            try {
-                let seriesId;
-
-                // Buscar El Último Baile si es necesario
-                if (seriesIdentifier === 'el-ultimo-baile') {
-                    const searchResponse = await fetch(
-                        `${API_BASE}/search/tv?api_key=${API_KEY}&query=El%20Último%20Baile&language=es-ES`
-                    );
-                    const searchData = await searchResponse.json();
-
-                    if (!searchData.results || searchData.results.length === 0) {
-                        showError('No se encontró "El Último Baile"');
-                        return;
-                    }
-                    seriesId = searchData.results[0].id;
-                } else {
-                    seriesId = seriesIdentifier;
-                }
-
-                // Obtener detalles completos
-                const response = await fetch(
-                    `${API_BASE}/tv/${seriesId}?api_key=${API_KEY}&language=es-ES`
-                );
-                const data = await response.json();
-
-                displaySeriesDetails(data);
-            } catch (error) {
-                showError(`Error al obtener detalles: ${error.message}`);
-            }
-        }
-
-        async function getSeriesSeasons(seriesIdentifier) {
-            showLoading();
-
-            try {
-                let seriesId;
-
-                if (seriesIdentifier === 'el-ultimo-baile') {
-                    const searchResponse = await fetch(
-                        `${API_BASE}/search/tv?api_key=${API_KEY}&query=El%20Último%20Baile&language=es-ES`
-                    );
-                    const searchData = await searchResponse.json();
-
-                    if (!searchData.results || searchData.results.length === 0) {
-                        showError('No se encontró "El Último Baile"');
-                        return;
-                    }
-                    seriesId = searchData.results[0].id;
-                } else {
-                    seriesId = seriesIdentifier;
-                }
-
-                const response = await fetch(
-                    `${API_BASE}/tv/${seriesId}?api_key=${API_KEY}&language=es-ES`
-                );
-                const data = await response.json();
-
-                displaySeasons(data);
-            } catch (error) {
-                showError(`Error al obtener temporadas: ${error.message}`);
-            }
-        }
-
-        // FUNCIONES DE VISUALIZACIÓN
-
-        function displaySeriesGrid(series, title = 'Resultados de Búsqueda') {
-            let html = `<div class="results-section"><h2>${title}</h2><div class="grid">`;
-
-            series.forEach((s, index) => {
-                const posterPath = s.poster_path
-                    ? `${IMAGE_BASE}${s.poster_path}`
-                    : null;
-                const rating = s.vote_average ? (s.vote_average / 2).toFixed(1) : 'N/A';
-                const year = s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A';
-
-                html += `
-                    <div class="card" style="animation-delay: ${index * 0.05}s;">
-                        <div class="card-image ${posterPath ? '' : 'no-image'}">
-                            ${posterPath ? `<img src="${posterPath}" alt="${s.name}">` : '🎬'}
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">${s.name}</div>
-                            <div class="card-info"> ${year}</div>
-                            <div class="card-rating"> ${rating}/5</div>
-                            <div class="card-info">${s.overview ? s.overview.substring(0, 80) + '...' : 'Sin descripción'}</div>
-                        </div>
-                    </div>
-                `;
-            });
 
             html += '</div></div>';
             document.getElementById('results-area').innerHTML = html;
+        }
+
+        function loadLastDanceCast() {
+            showLoading();
+            var url = API_BASE + '/tv/' + LAST_DANCE_ID + '/credits?api_key=' + API_KEY + '&language=es-ES';
+            fetch(url)
+                .then(checkResponse)
+                .then(function(creditsData) {
+                    if (!creditsData.cast || creditsData.cast.length === 0) {
+                        showError('No se encontró elenco en TMDB para esta serie');
+                        return;
+                    }
+                    var mainCast = creditsData.cast.slice(0, 10);
+                    displayLastDanceCast(mainCast);
+                })
+                .catch(function(error) {
+                    showError('No se pudo cargar. Detalle: ' + error.message);
+                });
+        }
+
+        function displayLastDanceCast(castList) {
+            var html = '<div class="results-section">' +
+                '<h2>Elenco Principal - "El Último Baile"</h2>' +
+                '<p style="color: #aaa; margin-bottom: 1.5rem;">Personas clave que aparecen y son entrevistadas</p>' +
+                '<div class="grid">';
+
+            for (var i = 0; i < castList.length; i++) {
+                var person = castList[i];
+                var profilePath = person.profile_path ? IMAGE_BASE + person.profile_path : 'https://via.placeholder.com/300x450?text=Sin+Foto';
+                var character = person.character || 'Self';
+                var pop = person.popularity ? person.popularity.toFixed(1) : 'N/A';
+
+                html += '<div class="card" style="animation-delay: ' + (i * 0.05) + 's;">' +
+                    '<div class="card-image">' +
+                        '<img src="' + profilePath + '" alt="' + person.name + '" onerror="this.src=\'https://via.placeholder.com/300x450?text=Sin+Foto\';">' +
+                    '</div>' +
+                    '<div class="card-content">' +
+                        '<div class="card-title">' + person.name + '</div>' +
+                        '<div class="card-info">' + character + '</div>' +
+                        '<div class="card-rating">Popularidad: ' + pop + '</div>' +
+                    '</div>' +
+                '</div>';
+            }
+
+            html += '</div></div>';
+            document.getElementById('results-area').innerHTML = html;
+        }
+
+        function getSeriesDetails(seriesIdentifier) {
+            showLoading();
+            if (seriesIdentifier === 'el-ultimo-baile') {
+                var searchUrl = API_BASE + '/search/tv?api_key=' + API_KEY + '&query=El%20Último%20Baile&language=es-ES';
+                fetch(searchUrl)
+                    .then(checkResponse)
+                    .then(function(searchData) {
+                        if (!searchData.results || searchData.results.length === 0) {
+                            showError('No se encontró "El Último Baile"');
+                            return;
+                        }
+                        return fetch(API_BASE + '/tv/' + searchData.results[0].id + '?api_key=' + API_KEY + '&language=es-ES');
+                    })
+                    .then(function(res) { return res ? checkResponse(res) : null; })
+                    .then(function(data) { if (data) displaySeriesDetails(data); })
+                    .catch(function(error) { showError('Error al obtener detalles: ' + error.message); });
+            } else {
+                fetch(API_BASE + '/tv/' + seriesIdentifier + '?api_key=' + API_KEY + '&language=es-ES')
+                    .then(checkResponse)
+                    .then(displaySeriesDetails)
+                    .catch(function(error) { showError('Error al obtener detalles: ' + error.message); });
+            }
         }
 
         function displaySeriesDetails(series) {
-            const posterPath = series.poster_path ? `${IMAGE_BASE}${series.poster_path}` : null;
-            const rating = series.vote_average ? (series.vote_average / 2).toFixed(1) : 'N/A';
-            const genresList = series.genres.map(g => g.name).join(', ') || 'No especificado';
-            const networks = series.networks.map(n => n.name).join(', ') || 'No especificado';
-            const status = series.status || 'No especificado';
-            const episodes = series.number_of_episodes || 'N/A';
-            const seasons = series.number_of_seasons || 'N/A';
+            var posterPath = series.poster_path ? IMAGE_BASE + series.poster_path : null;
+            var rating = series.vote_average ? (series.vote_average / 2).toFixed(1) : 'N/A';
+            
+            var genresList = [];
+            for (var i = 0; i < series.genres.length; i++) genresList.push(series.genres[i].name);
+            genresList = genresList.join(', ') || 'No especificado';
+            
+            var networksList = [];
+            for (var i = 0; i < series.networks.length; i++) networksList.push(series.networks[i].name);
+            networksList = networksList.join(', ') || 'No especificado';
 
-            let html = `
-                <div class="details-container">
-                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: start;">
-                        ${posterPath ? `<img src="${posterPath}" alt="${series.name}" style="width: 200px; border-radius: 10px; border: 2px solid var(--primary);">` : ''}
-                        <div>
-                            <h2 style="font-size: 2rem; color: var(--accent); margin-bottom: 1rem;">${series.name}</h2>
-                            <p style="color: var(--text); line-height: 1.6; margin-bottom: 1.5rem;">${series.overview || 'Sin descripción'}</p>
-                            
-                            <div class="details-grid">
-                                <div class="detail-item">
-                                    <div class="detail-label"> Calificación</div>
-                                    <div class="detail-value">${rating}/5 (${series.vote_count} votos)</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Géneros</div>
-                                    <div class="detail-value">${genresList}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Redes</div>
-                                    <div class="detail-value">${networks}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Estado</div>
-                                    <div class="detail-value">${status}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Temporadas</div>
-                                    <div class="detail-value">${seasons}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Episodios</div>
-                                    <div class="detail-value">${episodes}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> Primera emisión</div>
-                                    <div class="detail-value">${series.first_air_date || 'N/A'}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label"> País</div>
-                                    <div class="detail-value">${(series.origin_country || []).join(', ') || 'N/A'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            var originCountries = series.origin_country ? series.origin_country.join(', ') : 'N/A';
+            var posterImg = posterPath ? '<img src="' + posterPath + '" alt="' + series.name + '" style="width: 200px; border-radius: 10px; border: 2px solid var(--primary);">' : '';
 
+            var html = '<div class="details-container">' +
+                '<div style="display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: start;">' +
+                    posterImg +
+                    '<div>' +
+                        '<h2 style="font-size: 2rem; color: var(--accent); margin-bottom: 1rem;">' + series.name + '</h2>' +
+                        '<p style="color: var(--text); line-height: 1.6; margin-bottom: 1.5rem;">' + (series.overview || 'Sin descripción') + '</p>' +
+                        '<div class="details-grid">' +
+                            '<div class="detail-item"><div class="detail-label">Calificación</div><div class="detail-value">' + rating + '/5 (' + series.vote_count + ' votos)</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Géneros</div><div class="detail-value">' + genresList + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Redes</div><div class="detail-value">' + networksList + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Estado</div><div class="detail-value">' + (series.status || 'No especificado') + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Temporadas</div><div class="detail-value">' + (series.number_of_seasons || 'N/A') + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Episodios</div><div class="detail-value">' + (series.number_of_episodes || 'N/A') + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">Primera emisión</div><div class="detail-value">' + (series.first_air_date || 'N/A') + '</div></div>' +
+                            '<div class="detail-item"><div class="detail-label">País</div><div class="detail-value">' + originCountries + '</div></div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
             document.getElementById('results-area').innerHTML = html;
         }
 
-        function displaySeasons(series) {
-            let html = `
-                <div class="results-section">
-                    <h2>${series.name} - Temporadas</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Temporada</th>
-                                    <th>Episodios</th>
-                                    <th>Fecha de Aire</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-
-            series.seasons.forEach(season => {
-                if (season.season_number >= 0) {
-                    const airDate = season.air_date || 'N/A';
-                    const episodeCount = season.episode_count || 0;
-
-                    html += `
-                        <tr>
-                            <td><strong>Temporada ${season.season_number}</strong></td>
-                            <td>${episodeCount} episodios</td>
-                            <td>${airDate}</td>
-                            <td>${season.episode_count > 0 ? ' Disponible' : ' No disponible'}</td>
-                        </tr>
-                    `;
-                }
-            });
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('results-area').innerHTML = html;
-        }
-
-        function displayPeopleResults(people) {
-            let html = `<div class="results-section"><h2>Resultados de Actores</h2><div class="grid">`;
-
-            people.forEach((person, index) => {
-                const profilePath = person.profile_path
-                    ? `${IMAGE_BASE}${person.profile_path}`
-                    : null;
-                const popularity = person.popularity ? person.popularity.toFixed(1) : 'N/A';
-                const role = person.known_for_department || 'Artista';
-
-                html += `
-                    <div class="card" style="animation-delay: ${index * 0.05}s;">
-                        <div class="card-image ${profilePath ? '' : 'no-image'}">
-                            ${profilePath ? `<img src="${profilePath}" alt="${person.name}">` : '👤'}
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">${person.name}</div>
-                            <div class="card-info">🎭 ${role}</div>
-                            <div class="card-rating">📊 Popularidad: ${popularity}</div>
-                            ${person.known_for ? `<div class="card-info">Conocido por: ${person.known_for.map(k => k.title || k.name).join(', ')}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += '</div></div>';
-            document.getElementById('results-area').innerHTML = html;
-        }
-
-        // Exponer funciones globalmente para que HTML onclick pueda llamarlas post-Babel
-        window.setView = setView;
-        window.clearResults = clearResults;
-        window.loadLastDanceEpisodes = loadLastDanceEpisodes;
-        window.loadLastDanceCast = loadLastDanceCast;
-        window.getSeriesDetails = getSeriesDetails;
-
-        // Inicializar al cargar la página
-        window.addEventListener('load', () => {
-            console.log(' Aplicación TMDB Explorer cargada correctamente');
-            console.log(' Usando API Key: ' + API_KEY.substring(0, 5) + '...');
-
-            // Registrar PWA Service Worker
+        window.addEventListener('load', function() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('ServiceWorker registrado:', reg.scope))
-                    .catch(err => console.error('Error al registrar ServiceWorker:', err));
+                navigator.serviceWorker.register('./sw.js').catch(function() {});
             }
         });
     </script>
