@@ -1,9 +1,9 @@
-const CACHE_NAME = 'ultimo-baile-pwa-v3';
+const CACHE_NAME = 'ultimo-baile-pwa-v4';
 const ASSETS = [
     './',
     './index.html',
     './style.css',
-    './icon.svg',
+    './logo-el_ultimo_baile.png',
     './manifest.json'
 ];
 
