@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TMDB Explorer - El Último Baile</title>
     <link rel="stylesheet" href="style.css">
-    
+
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#e50914">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icon.svg">
 </head>
+
 <body>
     <header>
         <div class="header-content">
@@ -25,12 +27,12 @@
     <div class="container">
         <!-- Menú de Navegación -->
         <nav>
-            <button class="nav-button" onclick="setView('seasons')">🎬Temporadas</button>  <!-- CAMBIO AQUÍ -->
+            <button class="nav-button" onclick="setView('seasons')">🎬Temporadas</button> <!-- CAMBIO AQUÍ -->
             <button class="nav-button" onclick="setView('people')">👥Actores El Último Baile</button>
             <button class="nav-button" onclick="setView('el-ultimo-baile')">⛹️‍♂️El Último Baile</button>
         </nav>
 
- <!-- Sección de Temporadas - Solo El Último Baile -->
+        <!-- Sección de Temporadas - Solo El Último Baile -->
         <div id="seasons-view" class="input-section" style="display: none;">
             <h2>Episodios de "El Último Baile"</h2>
             <p style="color: var(--text); margin-bottom: 1.5rem;">
@@ -56,7 +58,8 @@
         <!-- Sección de El Último Baile -->
         <div id="el-ultimo-baile-view" class="input-section" style="display: none;">
             <h2> El Último Baile</h2>
-            <p style="color: var(--text); margin-bottom: 1rem;">Información completa sobre la serie "El Último Baile"</p>
+            <p style="color: var(--text); margin-bottom: 1rem;">Información completa sobre la serie "El Último Baile"
+            </p>
             <div class="button-group">
                 <button onclick="getSeriesDetails('el-ultimo-baile')">Cargar Detalles</button>
             </div>
@@ -80,7 +83,7 @@
         // Función para cambiar de vista
         function setView(view) {
             currentView = view;
-            
+
             // Actualizar botones
             document.querySelectorAll('.nav-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -125,58 +128,58 @@
                 </div>
             `;
         }
-// ID fijo de "El Último Baile" en TMDB
-const LAST_DANCE_ID = 79525;
+        // ID fijo de "El Último Baile" en TMDB
+        const LAST_DANCE_ID = 79525;
 
-// Función para cargar y mostrar los 10 episodios con imágenes
-async function loadLastDanceEpisodes() {
-    showLoading();
+        // Función para cargar y mostrar los 10 episodios con imágenes
+        async function loadLastDanceEpisodes() {
+            showLoading();
 
-    try {
-        // Obtenemos la temporada 1 (la única real)
-        const url = `${API_BASE}/tv/${LAST_DANCE_ID}/season/1?api_key=${API_KEY}&language=es-ES`;
-        const response = await fetch(url);
+            try {
+                // Obtenemos la temporada 1 (la única real)
+                const url = `${API_BASE}/tv/${LAST_DANCE_ID}/season/1?api_key=${API_KEY}&language=es-ES`;
+                const response = await fetch(url);
 
-        if (!response.ok) {
-            throw new Error(`Error al cargar episodios: ${response.status} - ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`Error al cargar episodios: ${response.status} - ${response.statusText}`);
+                }
+
+                const seasonData = await response.json();
+
+                if (!seasonData.episodes || seasonData.episodes.length === 0) {
+                    showError('No se encontraron episodios en la temporada 1');
+                    return;
+                }
+
+                displayEpisodesList(seasonData.episodes);
+
+            } catch (error) {
+                console.error('Error completo:', error);
+                showError(`Problema al cargar: ${error.message}. Revisa la consola (F12) o tu API key.`);
+            }
         }
 
-        const seasonData = await response.json();
-
-        if (!seasonData.episodes || seasonData.episodes.length === 0) {
-            showError('No se encontraron episodios en la temporada 1');
-            return;
-        }
-
-        displayEpisodesList(seasonData.episodes);
-
-    } catch (error) {
-        console.error('Error completo:', error);
-        showError(`Problema al cargar: ${error.message}. Revisa la consola (F12) o tu API key.`);
-    }
-}
-
-// Mostrar lista de episodios con foto (still) si existe
-function displayEpisodesList(episodes) {
-    let html = `
+        // Mostrar lista de episodios con foto (still) si existe
+        function displayEpisodesList(episodes) {
+            let html = `
         <div class="results-section">
             <h2>Episodios - El Último Baile (Temporada 1)</h2>
             <p style="color: #aaa; margin-bottom: 1.5rem;">10 episodios • Estreno: 19 de abril de 2020</p>
             <div class="episode-grid">
     `;
 
-    episodes.forEach((ep, index) => {
-        const stillPath = ep.still_path 
-            ? `${IMAGE_BASE}${ep.still_path}` 
-            : 'https://via.placeholder.com/500x280?text=Sin+Imagen';  // placeholder si no hay foto
+            episodes.forEach((ep, index) => {
+                const stillPath = ep.still_path
+                    ? `${IMAGE_BASE}${ep.still_path}`
+                    : 'https://via.placeholder.com/500x280?text=Sin+Imagen';  // placeholder si no hay foto
 
-        const airDate = ep.air_date 
-            ? new Date(ep.air_date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) 
-            : 'Sin fecha';
+                const airDate = ep.air_date
+                    ? new Date(ep.air_date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : 'Sin fecha';
 
-        const runtime = ep.runtime ? `${ep.runtime} min` : '—';
+                const runtime = ep.runtime ? `${ep.runtime} min` : '—';
 
-        html += `
+                html += `
             <div class="episode-card" style="animation-delay: ${index * 0.08}s;">
                 <div class="episode-image">
                     <img src="${stillPath}" alt="Episodio ${ep.episode_number} - ${ep.name}" 
@@ -193,9 +196,9 @@ function displayEpisodesList(episodes) {
                 </div>
             </div>
         `;
-    });
+            });
 
-    html += `
+            html += `
             </div>
             <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
                 Datos de TMDB • Docuserie disponible en Netflix/ESPN
@@ -203,57 +206,57 @@ function displayEpisodesList(episodes) {
         </div>
     `;
 
-    document.getElementById('results-area').innerHTML = html;
-}
-
-// Cargar cast principal de El Último Baile
-async function loadLastDanceCast() {
-    showLoading();
-
-    try {
-        const url = `${API_BASE}/tv/${LAST_DANCE_ID}/credits?api_key=${API_KEY}&language=es-ES`;
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
+            document.getElementById('results-area').innerHTML = html;
         }
 
-        const creditsData = await response.json();
+        // Cargar cast principal de El Último Baile
+        async function loadLastDanceCast() {
+            showLoading();
 
-        // TMDB devuelve "cast" para docuseries como "Self" roles
-        if (!creditsData.cast || creditsData.cast.length === 0) {
-            showError('No se encontró elenco en TMDB para esta serie');
-            return;
+            try {
+                const url = `${API_BASE}/tv/${LAST_DANCE_ID}/credits?api_key=${API_KEY}&language=es-ES`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const creditsData = await response.json();
+
+                // TMDB devuelve "cast" para docuseries como "Self" roles
+                if (!creditsData.cast || creditsData.cast.length === 0) {
+                    showError('No se encontró elenco en TMDB para esta serie');
+                    return;
+                }
+
+                // Tomamos solo los primeros 10 más relevantes (puedes ajustar)
+                const mainCast = creditsData.cast.slice(0, 10);
+
+                displayLastDanceCast(mainCast);
+
+            } catch (error) {
+                console.error('Error al cargar cast:', error);
+                showError(`No se pudo cargar. Detalle: ${error.message} (revisa consola F12)`);
+            }
         }
 
-        // Tomamos solo los primeros 10 más relevantes (puedes ajustar)
-        const mainCast = creditsData.cast.slice(0, 10);
-
-        displayLastDanceCast(mainCast);
-
-    } catch (error) {
-        console.error('Error al cargar cast:', error);
-        showError(`No se pudo cargar. Detalle: ${error.message} (revisa consola F12)`);
-    }
-}
-
-// Mostrar tarjetas de los principales
-function displayLastDanceCast(castList) {
-    let html = `
+        // Mostrar tarjetas de los principales
+        function displayLastDanceCast(castList) {
+            let html = `
         <div class="results-section">
             <h2>Elenco Principal - "El Último Baile"</h2>
             <p style="color: #aaa; margin-bottom: 1.5rem;">Personas clave que aparecen y son entrevistadas (datos de TMDB)</p>
             <div class="grid">
     `;
 
-    castList.forEach((person, index) => {
-        const profilePath = person.profile_path 
-            ? `${IMAGE_BASE}${person.profile_path}` 
-            : 'https://via.placeholder.com/300x450?text=Sin+Foto';
+            castList.forEach((person, index) => {
+                const profilePath = person.profile_path
+                    ? `${IMAGE_BASE}${person.profile_path}`
+                    : 'https://via.placeholder.com/300x450?text=Sin+Foto';
 
-        const character = person.character || 'Self';  // En docuseries suele ser "Self - [rol]"
+                const character = person.character || 'Self';  // En docuseries suele ser "Self - [rol]"
 
-        html += `
+                html += `
             <div class="card" style="animation-delay: ${index * 0.05}s;">
                 <div class="card-image">
                     <img src="${profilePath}" alt="${person.name}" 
@@ -266,9 +269,9 @@ function displayLastDanceCast(castList) {
                 </div>
             </div>
         `;
-    });
+            });
 
-    html += `
+            html += `
             </div>
             <p style="text-align: center; margin-top: 2rem; color: #888; font-size: 0.9rem;">
                 Incluye a Michael Jordan, Scottie Pippen, Phil Jackson, Dennis Rodman, Steve Kerr y más
@@ -276,8 +279,8 @@ function displayLastDanceCast(castList) {
         </div>
     `;
 
-    document.getElementById('results-area').innerHTML = html;
-}
+            document.getElementById('results-area').innerHTML = html;
+        }
         // FUNCIONES ESPECIALES PARA "EL ÚLTIMO BAILE"
 
         async function getSeriesDetails(seriesIdentifier) {
@@ -352,8 +355,8 @@ function displayLastDanceCast(castList) {
             let html = `<div class="results-section"><h2>${title}</h2><div class="grid">`;
 
             series.forEach((s, index) => {
-                const posterPath = s.poster_path 
-                    ? `${IMAGE_BASE}${s.poster_path}` 
+                const posterPath = s.poster_path
+                    ? `${IMAGE_BASE}${s.poster_path}`
                     : null;
                 const rating = s.vote_average ? (s.vote_average / 2).toFixed(1) : 'N/A';
                 const year = s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A';
@@ -483,8 +486,8 @@ function displayLastDanceCast(castList) {
             let html = `<div class="results-section"><h2>Resultados de Actores</h2><div class="grid">`;
 
             people.forEach((person, index) => {
-                const profilePath = person.profile_path 
-                    ? `${IMAGE_BASE}${person.profile_path}` 
+                const profilePath = person.profile_path
+                    ? `${IMAGE_BASE}${person.profile_path}`
                     : null;
                 const popularity = person.popularity ? person.popularity.toFixed(1) : 'N/A';
                 const role = person.known_for_department || 'Artista';
@@ -512,7 +515,7 @@ function displayLastDanceCast(castList) {
         window.addEventListener('load', () => {
             console.log(' Aplicación TMDB Explorer cargada correctamente');
             console.log(' Usando API Key: ' + API_KEY.substring(0, 5) + '...');
-            
+
             // Registrar PWA Service Worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./sw.js')
@@ -522,4 +525,5 @@ function displayLastDanceCast(castList) {
         });
     </script>
 </body>
+
 </html>
